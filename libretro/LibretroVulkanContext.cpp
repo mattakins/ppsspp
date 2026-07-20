@@ -145,6 +145,10 @@ void LibretroVulkanContext::ContextReset() {
       return;
    }
    vk_libretro_set_hwrender_interface(vulkan);
+   if (!vk) {
+      ERROR_LOG(Log::G3D, "Cannot reset libretro Vulkan context after device negotiation failed");
+      return;
+   }
 
    LibretroHWRenderContext::ContextReset();
 }
