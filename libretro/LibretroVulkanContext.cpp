@@ -34,50 +34,76 @@ void LibretroVulkanContext::SwapBuffers() {
 static bool create_device(retro_vulkan_context *context, VkInstance instance, VkPhysicalDevice gpu, VkSurfaceKHR surface, PFN_vkGetInstanceProcAddr get_instance_proc_addr, const char **required_device_extensions, unsigned num_required_device_extensions, const char **required_device_layers, unsigned num_required_device_layers, const VkPhysicalDeviceFeatures *required_features) {
 	init_glslang();
 
-	vk = new VulkanContext();
+	VulkanContext *new_vk = new VulkanContext();
+	int physical_device = 0;
 
 	vk_libretro_init(instance, gpu, surface, get_instance_proc_addr, required_device_extensions, num_required_device_extensions, required_device_layers, num_required_device_layers, required_features);
 
 	// TODO: Here we'll inject the instance and all of the stuff into the VulkanContext.
 
-	vk->CreateInstance({});
+	if (new_vk->CreateInstance({}) != VK_SUCCESS)
+		goto error;
 
-	int physical_device = 0;
-	while (gpu && vk->GetPhysicalDevice(physical_device) != gpu) {
+	while (gpu && new_vk->GetPhysicalDevice(physical_device) != gpu) {
 		physical_device++;
 	}
 
 	if (!gpu) {
-		physical_device = vk->GetBestPhysicalDevice();
+		physical_device = new_vk->GetBestPhysicalDevice();
 	}
 
-	vk->CreateDevice(physical_device);
+	if (new_vk->CreateDevice(physical_device) != VK_SUCCESS || new_vk->GetDevice() == VK_NULL_HANDLE)
+		goto error;
 #ifdef _WIN32
-	vk->InitSurface(WINDOWSYSTEM_WIN32, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_WIN32, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #elif defined(__ANDROID__)
-	vk->InitSurface(WINDOWSYSTEM_ANDROID, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_ANDROID, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
-    vk->InitSurface(WINDOWSYSTEM_METAL_EXT, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_METAL_EXT, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-	vk->InitSurface(WINDOWSYSTEM_XLIB, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_XLIB, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #elif defined(VK_USE_PLATFORM_XCB_KHR)
-	vk->InitSurface(WINDOWSYSTEM_XCB, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_XCB, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-	vk->InitSurface(WINDOWSYSTEM_WAYLAND, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_WAYLAND, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #elif defined(VK_USE_PLATFORM_DISPLAY_KHR)
-	vk->InitSurface(WINDOWSYSTEM_DISPLAY, nullptr, nullptr);
+	if (new_vk->InitSurface(WINDOWSYSTEM_DISPLAY, nullptr, nullptr) != VK_SUCCESS)
+		goto error;
 #endif
 
-	context->gpu = vk->GetPhysicalDevice(physical_device);
-	context->device = vk->GetDevice();
-	context->queue = vk->GetGraphicsQueue();
-	context->queue_family_index = vk->GetGraphicsQueueFamilyIndex();
+	if (new_vk->GetGraphicsQueue() == VK_NULL_HANDLE)
+		goto error;
+
+	context->gpu = new_vk->GetPhysicalDevice(physical_device);
+	context->device = new_vk->GetDevice();
+	context->queue = new_vk->GetGraphicsQueue();
+	context->queue_family_index = new_vk->GetGraphicsQueueFamilyIndex();
 	context->presentation_queue = context->queue;
 	context->presentation_queue_family_index = context->queue_family_index;
+	vk = new_vk;
 #ifdef _DEBUG
 	fflush(stdout);
 #endif
 	return true;
+
+error:
+	ERROR_LOG(Log::G3D, "Failed to create libretro Vulkan device: %s", new_vk->InitError().c_str());
+	if (new_vk->GetInstance() != VK_NULL_HANDLE)
+	{
+		new_vk->DestroySurface();
+		if (new_vk->GetDevice() != VK_NULL_HANDLE)
+			new_vk->DestroyDevice();
+		new_vk->DestroyInstance();
+	}
+	delete new_vk;
+	vk_libretro_shutdown();
+	return false;
 }
 
 static const VkApplicationInfo *GetApplicationInfo(void) {
