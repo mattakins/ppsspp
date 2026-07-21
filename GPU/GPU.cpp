@@ -74,7 +74,10 @@ static GPUCommon *CreateGPUCore(GPUCore gpuCore, GraphicsContext *ctx, Draw::Dra
 }
 
 bool GPU_Init(GPUCore gpuCore, GraphicsContext *ctx, Draw::DrawContext *draw) {
-	_dbg_assert_(draw || gpuCore == GPUCORE_SOFTWARE);
+	if (!draw && gpuCore != GPUCORE_SOFTWARE) {
+		ERROR_LOG(Log::G3D, "Cannot initialize hardware GPU without a draw context");
+		return false;
+	}
 	_dbg_assert_(!gpu);
 
 	GPUCommon *createdGPU = CreateGPUCore(gpuCore, ctx, draw);

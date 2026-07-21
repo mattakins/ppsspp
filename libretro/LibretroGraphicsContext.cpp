@@ -52,6 +52,10 @@ void LibretroHWRenderContext::ContextReset() {
 
 	if (!draw_) {
 		CreateDrawContext();
+		if (!draw_) {
+			ERROR_LOG(Log::G3D, "Failed to create draw context");
+			return;
+		}
 		bool success = draw_->CreatePresets();
 		_assert_(success);
 	}

@@ -13,6 +13,9 @@
 #include <libretro_vulkan.h>
 #include <GPU/Vulkan/VulkanRenderManager.h>
 #include "ext/glslang/OGLCompilersDLL/InitializeDll.h"
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 #undef fflush
 
@@ -162,21 +165,26 @@ void LibretroVulkanContext::ContextDestroy() {
 }
 
 void LibretroVulkanContext::CreateDrawContext() {
-   vk->ReinitSurface();
+	VkResult surface_result = vk->ReinitSurface();
+	bool swapchain_initialized = surface_result == VK_SUCCESS && vk->InitSwapchain(VK_PRESENT_MODE_FIFO_KHR);
+#ifdef __ANDROID__
+	__android_log_print(ANDROID_LOG_ERROR, "PPSSPP", "Libretro Vulkan surface=%d swapchain=%d device=%p", surface_result, swapchain_initialized, (void *)vk->GetDevice());
+#endif
+	if (!swapchain_initialized)
+		return;
 
-   // TODO: Integrate properly with libretro vulkan context. We currently use a wacky wrapper (libretro_vulkan.cpp)
-   if (!vk->InitSwapchain(VK_PRESENT_MODE_FIFO_KHR)) {
-      return;
-   }
+	bool useMultiThreading = g_Config.bRenderMultiThreading;
+	if (g_Config.iInflightFrames == 1)
+		useMultiThreading = false;
+	draw_ = Draw::T3DCreateVulkanContext(vk, useMultiThreading);
+#ifdef __ANDROID__
+	__android_log_print(ANDROID_LOG_ERROR, "PPSSPP", "Libretro Vulkan draw context=%p", draw_);
+#endif
+	if (!draw_)
+		return;
 
-   bool useMultiThreading = g_Config.bRenderMultiThreading;
-   if (g_Config.iInflightFrames == 1) {
-      useMultiThreading = false;
-   }
-   draw_ = Draw::T3DCreateVulkanContext(vk, useMultiThreading);
-
-   ((VulkanRenderManager*)draw_->GetNativeObject(Draw::NativeObject::RENDER_MANAGER))->SetInflightFrames(g_Config.iInflightFrames);
-   SetGPUBackend(GPUBackend::VULKAN);
+	((VulkanRenderManager *)draw_->GetNativeObject(Draw::NativeObject::RENDER_MANAGER))->SetInflightFrames(g_Config.iInflightFrames);
+	SetGPUBackend(GPUBackend::VULKAN);
 }
 
 void LibretroVulkanContext::Shutdown() {
