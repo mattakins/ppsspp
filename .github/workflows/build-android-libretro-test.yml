@@ -1,0 +1,30 @@
+name: Build Android libretro core (test)
+
+on:
+  push:
+    branches:
+      - test-ppsspp-feature-swapchain-capacity
+
+jobs:
+  build-android-libretro:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        id: setup-ndk
+        with:
+          ndk-version: r21e
+
+      - name: Build Android libretro core
+        env:
+          NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
+          APP_ABI: arm64-v8a
+        run: ./b.sh --libretro_android ppsspp_libretro
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ppsspp-libretro-android-arm64-v8a
+          path: build/ppsspp_libretro_android.so
