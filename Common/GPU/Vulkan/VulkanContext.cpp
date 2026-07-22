@@ -781,7 +781,7 @@ VkResult VulkanContext::CreateDevice(int physical_device) {
 	}
 	deviceFeatures_.enabled.provokingVertex = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_FEATURES_EXT };
 	if (extensionsLookup_.EXT_provoking_vertex) {
-		deviceFeatures_.enabled.provokingVertex.provokingVertexLast = true;
+		deviceFeatures_.enabled.provokingVertex.provokingVertexLast = deviceFeatures_.available.provokingVertex.provokingVertexLast;
 	}
 	deviceFeatures_.enabled.presentModeFifoProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR};
 	if (extensionsLookup_.KHR_present_mode_fifo_latest_ready) {
