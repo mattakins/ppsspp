@@ -3,7 +3,7 @@ name: Build Android libretro core (test)
 on:
   push:
     branches:
-      - test-ppsspp-vulkan-device-negotiation
+      - test-ppsspp-feature-negotiation-pr-only
 
 jobs:
   build-android-libretro:
