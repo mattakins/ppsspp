@@ -706,6 +706,11 @@ BootState PSP_InitUpdate(std::string *error_string) {
 
 #ifdef __LIBRETRO__
 	InitGPU(error_string);
+	if (g_bootState == BootState::Failed) {
+		Core_NotifyLifecycle(CoreLifecycle::START_COMPLETE);
+		g_bootState = BootState::Off;
+		return BootState::Failed;
+	}
 #endif
 
 	// Ok, async part of the boot completed, let's finish up things on the main thread.

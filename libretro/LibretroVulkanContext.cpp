@@ -97,6 +97,9 @@ static bool create_device(retro_vulkan_context *context, VkInstance instance, Vk
 
 error:
 	ERROR_LOG(Log::G3D, "Failed to create libretro Vulkan device: %s", new_vk->InitError().c_str());
+#ifdef __ANDROID__
+	__android_log_print(ANDROID_LOG_ERROR, "PPSSPP", "Libretro Vulkan device setup failed: %s", new_vk->InitError().c_str());
+#endif
 	if (new_vk->GetInstance() != VK_NULL_HANDLE)
 	{
 		new_vk->DestroySurface();
@@ -148,6 +151,9 @@ void LibretroVulkanContext::ContextReset() {
       return;
    }
    vk_libretro_set_hwrender_interface(vulkan);
+#ifdef __ANDROID__
+   __android_log_print(ANDROID_LOG_ERROR, "PPSSPP", "Libretro Vulkan context reset: context=%p", (void *)vk);
+#endif
    if (!vk) {
       ERROR_LOG(Log::G3D, "Cannot reset libretro Vulkan context after device negotiation failed");
       return;
