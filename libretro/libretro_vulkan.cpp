@@ -3,6 +3,9 @@
 #include <vector>
 #include <mutex>
 #include <condition_variable>
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 #include "Common/GPU/Vulkan/VulkanLoader.h"
 #include "Common/Log.h"
@@ -141,8 +144,12 @@ static VKAPI_ATTR VkResult VKAPI_CALL vkCreateDevice_libretro(VkPhysicalDevice p
    }
 
    VkResult res = vkCreateDevice_org(physicalDevice, &newInfo, pAllocator, pDevice);
-   if (res != VK_SUCCESS || !pDevice || *pDevice == VK_NULL_HANDLE)
+   if (res != VK_SUCCESS || !pDevice || *pDevice == VK_NULL_HANDLE) {
       ERROR_LOG(Log::G3D, "libretro vkCreateDevice returned %d with device %p", res, pDevice ? (void *)*pDevice : nullptr);
+#ifdef __ANDROID__
+      __android_log_print(ANDROID_LOG_ERROR, "PPSSPP", "libretro vkCreateDevice result=%d device=%p", res, pDevice ? (void *)*pDevice : nullptr);
+#endif
+   }
 
    // The above code potentially modifies application memory. Restore it to avoid unexpected side effects.
    for (const auto& pair : originalFeaturePointers) {

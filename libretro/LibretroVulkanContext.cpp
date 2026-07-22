@@ -156,6 +156,7 @@ void LibretroVulkanContext::ContextReset() {
 #endif
    if (!vk) {
       ERROR_LOG(Log::G3D, "Cannot reset libretro Vulkan context after device negotiation failed");
+      Libretro::environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, nullptr);
       return;
    }
 
